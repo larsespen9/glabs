@@ -4,7 +4,10 @@
 package lab7
 
 import (
+	"errors"
+	"strings"
 	"time"
+	"unicode"
 )
 
 const timeFormat = "2006/01/02, 15:04:05"
@@ -13,37 +16,69 @@ const timeOnly = "15:04:05"
 const timeLen = len(timeFormat)
 
 type StatusChange struct {
-	Time time.Time
+	Time       time.Time
+	ipadr      string
+	statusType string
+	value      string
 	//TODO finish this struct (1p)
 }
 
 type ChZap struct {
-	Time time.Time
+	Time     time.Time
+	ipadr    string
+	toChan   string
+	fromChan string
 	//TODO finish this struct (1p)
 }
 
 func NewSTBEvent(event string) (*ChZap, *StatusChange, error) {
-	//TODO write this method (5p)
-	return nil, nil, nil
+	heleStringen := fjernMellomrom(event)
+	stringListe := strings.Split(heleStringen, ",")
+	tidogdato := stringListe[0] + ", " + stringListe[1]
+	time, err := time.Parse(timeFormat, tidogdato)
+	if err != nil {
+		return nil, nil, errors.New("NewSTBEvent: failed to parse timestamp")
+	}
+	if len(stringListe) < 4 {
+		s := new(StatusChange)
+		s.Time = time
+		s.ipadr = stringListe[2]
+		status := strings.Split(stringListe[3], ":")
+		s.statusType = status[0]
+		s.value = status[1]
+		return nil, s, nil
+	}
+	c := new(ChZap)
+	c.Time = time
+	c.ipadr = stringListe[2]
+	c.toChan = stringListe[3]
+	c.fromChan = stringListe[4]
+	return c, nil, nil
+
 }
 
 func (zap ChZap) String() string {
-	//TODO write this method (2p)
-	return ""
+	return "Time:" + zap.Time.Format(timeFormat) + ", IP:" + zap.ipadr + ", ToChan:" + zap.toChan + ", FromChan:" + zap.fromChan
 }
 
 func (schg StatusChange) String() string {
-	//TODO write this method (1p)
-	return ""
+	return "Time:" + schg.Time.Format(timeFormat) + ", IP:" + schg.ipadr + ", StatusType:" + schg.statusType + ", Value:" + schg.value
 }
 
-// The duration between receiving (this) zap event and the provided event
+// The duration... between receiving (this) zap event and the provided event
 func (zap ChZap) Duration(provided ChZap) time.Duration {
-	//TODO write this method (1p)
-	return time.Duration(0)
+	return zap.Time.Sub(provided.Time)
 }
 
 func (zap ChZap) Date() string {
-	//TODO write this method (1p)
-	return ""
+	return zap.Time.Format(dateFormat)
+}
+
+func fjernMellomrom(str string) string {
+	return strings.Map(func(r rune) rune {
+		if unicode.IsSpace(r) {
+			return -1
+		}
+		return r
+	}, str)
 }
