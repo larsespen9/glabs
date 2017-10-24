@@ -39,21 +39,30 @@ func NewSTBEvent(event string) (*ChZap, *StatusChange, error) {
 	if err != nil {
 		return nil, nil, errors.New("NewSTBEvent: failed to parse timestamp")
 	}
-	if len(stringListe) < 4 {
+	if len(stringListe) == 4 {
 		s := new(StatusChange)
 		s.Time = time
+		if s.Time.Format(timeOnly) == "00:00:00" {
+			errorString := "NewSTBEvent: too short event string: " + s.Time.Format(timeFormat)
+			err := errors.New(errorString)
+			return nil, s, err
+		}
 		s.ipadr = stringListe[2]
 		status := strings.Split(stringListe[3], ":")
 		s.statusType = status[0]
 		s.value = status[1]
 		return nil, s, nil
+	} else if len(stringListe) == 5 {
+		c := new(ChZap)
+		c.Time = time
+		c.ipadr = stringListe[2]
+		c.toChan = stringListe[3]
+		c.fromChan = stringListe[4]
+		return c, nil, nil
+	} else if len(stringListe) > 5 {
+		return nil, nil, errors.New("NewSTBEvent: event with too many fields")
 	}
-	c := new(ChZap)
-	c.Time = time
-	c.ipadr = stringListe[2]
-	c.toChan = stringListe[3]
-	c.fromChan = stringListe[4]
-	return c, nil, nil
+	return nil, nil, errors.New("NewSTBEvent: too short event string:%q")
 
 }
 
